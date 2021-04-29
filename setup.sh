@@ -55,6 +55,8 @@ create_config() {
 
 setup_compose() {
     cd $BASE_PATH
+
+    wget https://raw.githubusercontent.com/Bllyth/Packer-Server-Setup/master/data/docker-compose.yml
     echo "export COMPOSE_PROJECT_NAME=lms" >> ~/.profile
     echo "export COMPOSE_FILE=/opt/lms/docker-compose.yml" >> ~/.profile
     export COMPOSE_PROJECT_NAME=lms
