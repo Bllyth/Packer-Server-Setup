@@ -1,0 +1,34 @@
+version: "3.7"
+x-restart-policy: &restart_policy
+  restart: unless-stopped
+services:
+  postgres:
+    <<: *restart_policy
+    env_file:
+      - ../../.env
+    image: postgres:12
+    ports:
+      - "5432:5432"
+    volumes:
+      - /opt/lms/postgres-data:/var/lib/postgresql/data
+
+  core:
+    image: lms-local
+    env_file:
+      - ../../.env
+    build:
+      # Pro-tip: point this to a relative directory containing the Dispatch
+      # project root to pick up changes from your dev environment
+      # (e.g., ../dispatch-root)
+      context: https://github.com/Netflix/dispatch.git#latest
+    web:
+      <<: *restart_policy
+      image: lms-local
+      depends_on:
+        - postgres
+        - core
+      env_file:
+        - .env
+      command: [ "server", "start", "backend.app.main:app", "--host=0.0.0.0" ]
+      ports:
+        - "8000:8000"

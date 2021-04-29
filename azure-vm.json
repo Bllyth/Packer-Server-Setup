@@ -1,0 +1,79 @@
+{
+  "builders": [
+    {
+      "type": "azure-arm",
+      "client_id": "74e345dd-5476-4a31-9492-d50acb11c8e6",
+      "client_secret": "iz1A-wNfn68ZTzidQjSU9FebF60HsKMZGA",
+      "tenant_id": "5ee73123-c406-45e6-9b08-e09bda452857",
+      "subscription_id": "2a74cbb5-6f45-4150-849d-ca114b392589",
+      "managed_image_resource_group_name": "LMSResourceGroup",
+      "managed_image_name": "LMSImage",
+      "os_type": "Linux",
+      "image_publisher": "Canonical",
+      "image_offer": "UbuntuServer",
+      "image_sku": "18.04-LTS",
+      "azure_tags": {
+        "dept": "Engineering",
+        "task": "Image deployment"
+      },
+      "location": "East US",
+      "vm_size": "Standard_B1ms"
+    }
+  ],
+  "provisioners": [
+    {
+      "execute_command": "chmod +x {{ .Path }}; {{ .Vars }} sudo -E sh '{{ .Path }}'",
+      "inline": [
+        "apt-get update",
+        "apt-get upgrade -y",
+        "apt-get install git zip unzip -y"
+      ],
+      "inline_shebang": "/bin/sh -x",
+      "type": "shell"
+    },
+    {
+      "type": "shell",
+      "script": "setup.sh",
+      "execute_command": "{{ .Vars }} sudo -E -S bash '{{ .Path }}'"
+    },
+    {
+      "type": "shell",
+      "inline": "sudo rm /root/.ssh/authorized_keys || true"
+    },
+    {
+      "type": "shell",
+      "inline": "sudo rm /home/ubuntu/.ssh/authorized_keys || true"
+    },
+    {
+      "type": "file",
+      "source": "data/generate_key.sh",
+      "destination": "/tmp/rc.local"
+    },
+    {
+      "type": "file",
+      "source": "data/docker-compose-up.service",
+      "destination": "/tmp/docker-compose-up.service"
+    },
+    {
+      "type": "shell",
+      "inline": [
+        "sudo mv /tmp/rc.local /etc/rc.local",
+        "sudo chown root /etc/rc.local",
+        "sudo chmod 755 /etc/rc.local",
+        "sudo mv /tmp/docker-compose-up.service /etc/systemd/system/docker-compose-up.service",
+        "sudo chown root /etc/systemd/system/docker-compose-up.service",
+        "sudo systemctl enable docker-compose-up"
+      ]
+    },
+    {
+      "type": "shell",
+      "script": "data/cleanup.sh",
+      "execute_command": "{{ .Vars }} sudo -E -S bash '{{ .Path }}'"
+    },
+    {
+      "type": "shell",
+      "script": "data/do_img_checks.sh",
+      "execute_command": "{{ .Vars }} sudo -E -S bash '{{ .Path }}'"
+    }
+  ]
+}
